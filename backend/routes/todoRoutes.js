@@ -3,7 +3,8 @@ const todoController = require('../controllers/todoController');
 
 const router = express.Router();
 
-// router.route('/todo-stats').get(todoController.getTodoStats);
+router.route('/todos-stats').get(todoController.getTodoStats);
+router.route('/todos-by-month').get(todoController.getTodosByMonth);
 
 // router.route('/monthly-plan/:year').get(todoController.getMonthlyPlan);
 

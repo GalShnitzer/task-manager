@@ -4,12 +4,6 @@ const catchAsync = require('../utils/catchAsync');
 const AppError = require('../utils/appError');
 const { filterObj } = require('./../utils/helpenFunctions');
 
-// exports.aliasTopTodos = (req, res, next) => {
-//   req.query.limit = '5';
-//   req.query.sort = '-ratingsAverage,price';
-//   req.query.fields = 'name,price,ratingsAverage,summary,difficulty';
-//   next();
-// };
 exports.dueThisWeek = (req, res, next) => {
   const today = new Date();
   const nextWeek = new Date(today);
@@ -66,7 +60,7 @@ exports.getTodo = catchAsync(async (req, res, next) => {
 });
 
 exports.createTodo = catchAsync(async (req, res, next) => {
-  const newTodo = await Todo.create({ ...req.body});
+  const newTodo = await Todo.create({ ...req.body });
   res.status(201).json({
     status: 'success',
     data: {
@@ -146,76 +140,134 @@ exports.recoverTodo = catchAsync(async (req, res, next) => {
   });
 });
 
-// exports.getTodoStats = catchAsync(async (req, res, next) => {
-//   const stats = await Todo.aggregate([
-//     {
-//       $match: { ratingsAverage: { $gte: 4.5 }, status: { $ne: 'archived' } },
-//     },
-//     {
-//       $group: {
-//         _id: { $toUpper: '$difficulty' },
-//         numTodos: { $sum: 1 },
-//         numRatings: { $sum: '$ratingsQuantity' },
-//         avgRating: { $avg: '$ratingsAverage' },
-//         avgPrice: { $avg: '$price' },
-//         minPrice: { $min: '$price' },
-//         maxPrice: { $max: '$price' },
-//       },
-//     },
-//     {
-//       $sort: { avgPrice: 1 },
-//     },
-//   ]);
-//   res.status(200).json({
-//     status: 'success',
-//     data: {
-//       stats,
-//     },
-//   });
-// });
+exports.getTodoStats = catchAsync(async (req, res, next) => {
+  const stats = await Todo.aggregate([
+    {
+      $match: { status: { $ne: 'archived' } },
+    },
+    {
+      $facet: {
+        totalStats: [
+          {
+            $group: {
+              _id: null,
+              totalTodos: { $sum: 1 },
+              doneTodos: {
+                $sum: { $cond: [{ $eq: ['$status', 'done'] }, 1, 0] },
+              },
+              lowPriority: {
+                $sum: { $cond: [{ $eq: ['$priority', 'low'] }, 1, 0] },
+              },
+              mediumPriority: {
+                $sum: { $cond: [{ $eq: ['$priority', 'medium'] }, 1, 0] },
+              },
+              highPriority: {
+                $sum: { $cond: [{ $eq: ['$priority', 'high'] }, 1, 0] },
+              },
+              urgentPriority: {
+                $sum: { $cond: [{ $eq: ['$priority', 'urgent'] }, 1, 0] },
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
 
-// exports.getMonthlyPlan = catchAsync(async (req, res, next) => {
-//   const year = req.params.year * 1;
-//   const plan = await Todo.aggregate([
-//     {
-//       $unwind: '$startDates', //make new document for each date in the startdates
-//     },
-//     {
-//       $match: {
-//         startDates: {
-//           $gte: new Date(`${year}-01-01`),
-//           $lte: new Date(`${year}-12-31`),
-//         },
-//       },
-//     },
-//     {
-//       $group: {
-//         _id: { $month: '$startDates' },
-//         numTodosStarts: { $sum: 1 },
-//         todos: {
-//           $push: '$name',
-//         },
-//       },
-//     },
-//     {
-//       $addFields: { month: '$_id' },
-//     },
-//     {
-//       $project: {
-//         _id: 0,
-//       },
-//     },
-//     {
-//       $sort: { numTodoStarts: -1 },
-//     },
-//     {
-//       $limit: 6,
-//     },
-//   ]);
-//   res.status(200).json({
-//     status: 'success',
-//     data: {
-//       plan,
-//     },
-//   });
-// });
+  const result = stats[0].totalStats[0];
+
+  // Calculate percentages
+  const { totalTodos } = result;
+  const percentageDone =
+    totalTodos > 0 ? (result.doneTodos / totalTodos) * 100 : 0;
+
+  // Priority percentages sum to 100%
+  const percentageLow =
+    totalTodos > 0 ? (result.lowPriority / totalTodos) * 100 : 0;
+  const percentageMedium =
+    totalTodos > 0 ? (result.mediumPriority / totalTodos) * 100 : 0;
+  const percentageHigh =
+    totalTodos > 0 ? (result.highPriority / totalTodos) * 100 : 0;
+  const percentageUrgent =
+    100 - (percentageLow + percentageMedium + percentageHigh);
+
+  res.status(200).json({
+    status: 'success',
+    data: {
+      todoStats: {
+        totalTodos,
+        completionStats: {
+          doneTodos: result.doneTodos,
+          percentageDone: percentageDone.toFixed(2),
+        },
+        priorityStats: {
+          lowPriority: result.lowPriority,
+          percentageLow: percentageLow.toFixed(2),
+          mediumPriority: result.mediumPriority,
+          percentageMedium: percentageMedium.toFixed(2),
+          highPriority: result.highPriority,
+          percentageHigh: percentageHigh.toFixed(2),
+          urgentPriority: result.urgentPriority,
+          percentageUrgent: percentageUrgent.toFixed(2),
+        },
+      },
+    },
+  });
+});
+
+exports.getTodosByMonth = catchAsync(async (req, res, next) => {
+  const field = req.query.field || 'createdAt';
+
+  if (!['dueDate', 'createdAt'].includes(field)) {
+    return next(
+      new AppError(
+        'field parameter must be either "dueDate" or "createdAt"',
+        400,
+      ),
+    );
+  }
+
+  const selectedYear = req.query.year
+    ? parseInt(req.query.year)
+    : new Date().getFullYear();
+
+  const plan = await Todo.aggregate([
+    {
+      $match: {
+        [field]: {
+          $gte: new Date(`${selectedYear}-01-01T00:00:00.000Z`),
+          $lt: new Date(`${selectedYear + 1}-01-01T00:00:00.000Z`),
+        },
+        status: { $ne: 'archived' },
+      },
+    },
+    {
+      $group: {
+        _id: { $month: { date: `$${field}`, timezone: 'Asia/Jerusalem' } },
+        numTodos: { $sum: 1 },
+      },
+    },
+    {
+      $sort: { _id: 1 },
+    },
+  ]);
+
+  const monthMap = {};
+  plan.forEach((item) => {
+    monthMap[item._id] = item.numTodos;
+  });
+
+  const completeMonths = Array.from({ length: 12 }, (_, i) => ({
+    month: i + 1,
+    numTodos: monthMap[i + 1] || 0,
+  }));
+
+  res.status(200).json({
+    status: 'success',
+    year: selectedYear,
+    field,
+    data: {
+      monthlyTodos: completeMonths,
+    },
+  });
+});

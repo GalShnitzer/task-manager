@@ -6,6 +6,7 @@ import { useTodos } from "./hooks/useTodos";
 import Modal from "./components/Modal";
 import TaskForm from "./components/TaskForm";
 import ConfirmDialog from "./components/ConfirmDialog";
+import TodoDetailModal from "./components/TodoDetailModal";
 import Main from "./components/Main";
 import Header from "./components/Header";
 import Error from "./components/Error";
@@ -20,6 +21,7 @@ export default function App() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTodo, setEditTodo] = useState(null);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [detailTodo, setDetailTodo] = useState(null);
 
   const {
     todos,
@@ -61,6 +63,13 @@ export default function App() {
     setDeleteConfirm(null);
   }
 
+  async function handleQuickStatusChange(todoId, newStatus) {
+    const todo = todos.find((t) => t._id === todoId);
+    if (todo) {
+      await updateTodo(todoId, { ...todo, status: newStatus });
+    }
+  }
+
   const isOverdue = (dueDate) => dueDate && new Date(dueDate) < new Date();
 
   return (
@@ -84,6 +93,8 @@ export default function App() {
           onArchive={archiveTodo}
           onDelete={setDeleteConfirm}
           onRecover={recoverTodo}
+          onStatusChange={handleQuickStatusChange}
+          onViewDetail={setDetailTodo}
           loading={loading}
           view={view}
           isOverdue={isOverdue}
@@ -128,6 +139,13 @@ export default function App() {
         message={`Are you sure you want to permanently delete "${deleteConfirm?.title}"? This action cannot be undone.`}
         onConfirm={() => handlePermanentDelete(deleteConfirm._id)}
         onCancel={() => setDeleteConfirm(null)}
+      />
+
+      {/* Todo Detail Modal */}
+      <TodoDetailModal
+        open={!!detailTodo}
+        todo={detailTodo}
+        onClose={() => setDetailTodo(null)}
       />
     </div>
   );

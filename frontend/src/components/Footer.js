@@ -1,12 +1,19 @@
+import { useTodoStats } from "../hooks/useTodoStats";
+import SummarySection from "./SummarySection";
+import PriorityChart from "./PriorityChart";
+import MonthlyChart from "./MonthlyChart";
+
 function Footer({ todos }) {
+  const { stats, loading } = useTodoStats(todos);
+
   return (
     <footer className="footer">
-      <span className="footer-label">Summary</span>
-      <span className="footer-stat">
-        📊 <strong>{todos.length}</strong> tasks shown
-      </span>
-      {/* Add more summary fields here */}
-      <span className="footer-credit">Task Manager · Built with ♥</span>
+      <SummarySection stats={stats} loading={loading} />
+
+      <div className="footer-charts-row">
+        <PriorityChart stats={stats} loading={loading} />
+        <MonthlyChart todos={todos} />
+      </div>
     </footer>
   );
 }
