@@ -40,7 +40,6 @@ function TodoDetailModal({ open, todo, onClose }) {
 
         {todo.description && (
           <div className="todo-detail-section">
-            <label className="todo-detail-label">Description</label>
             <p className="todo-detail-description">{todo.description}</p>
           </div>
         )}
