@@ -3,8 +3,6 @@ import "./App.css";
 import { useTodos } from "./hooks/useTodos";
 
 // Import components
-import Badge from "./components/Badge";
-import StatusBadge from "./components/StatusBadge";
 import Modal from "./components/Modal";
 import TaskForm from "./components/TaskForm";
 import ConfirmDialog from "./components/ConfirmDialog";
@@ -95,7 +93,8 @@ export default function App() {
 
       <Footer todos={todos} />
 
-      {/* MODALS */}
+      {/* -------------MODALS-------------------- */}
+      {/* Add Task Modal */}
       <Modal
         open={showAddModal}
         title="✨ New Task"
@@ -108,6 +107,7 @@ export default function App() {
         />
       </Modal>
 
+      {/* Edit Task Modal */}
       <Modal
         open={!!editTodo}
         title="✏️ Edit Task"
@@ -122,7 +122,7 @@ export default function App() {
           />
         )}
       </Modal>
-
+      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         open={!!deleteConfirm}
         message={`Are you sure you want to permanently delete "${deleteConfirm?.title}"? This action cannot be undone.`}
