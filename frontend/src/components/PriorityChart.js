@@ -32,10 +32,13 @@ function PriorityChart({ stats, loading }) {
 
   const priorityData = getPriorityChartData();
 
-  if (loading || !stats) return null;
+  if (!stats) return null;
 
   return (
-    <div className="footer-priority-section">
+    <div
+      className="footer-priority-section"
+      style={{ opacity: loading ? 0.6 : 1 }}
+    >
       <div className="footer-chart-container">
         <ResponsiveContainer width="100%" height={140}>
           <PieChart>

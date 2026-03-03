@@ -6,7 +6,9 @@ export function useTodoStats(todos) {
 
   useEffect(() => {
     async function fetchStats() {
-      setLoading(true);
+      // Only set loading if we don't have any data yet
+      if (!stats) setLoading(true);
+
       try {
         const res = await fetch("/api/v1/todos/todos-stats");
         const data = await res.json();

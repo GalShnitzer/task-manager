@@ -19,10 +19,15 @@ function MonthlyChart({ todos }) {
     loading,
   } = useMonthlyData(todos);
 
-  if (loading || !monthlyData) return null;
+  if (!monthlyData) return null;
+
+  const maxTasks = Math.max(...monthlyData.map((m) => m.tasks), 1);
 
   return (
-    <div className="footer-monthly-section">
+    <div
+      className="footer-monthly-section"
+      style={{ opacity: loading ? 0.6 : 1 }}
+    >
       <div className="footer-field-selector">
         <div className="selector-group">
           <label htmlFor="field-select">View by:</label>
@@ -73,7 +78,11 @@ function MonthlyChart({ todos }) {
                 interval={0}
                 padding={{ left: 10, right: 10 }}
               />
-              <YAxis tick={{ fontSize: 12, fill: "#64748b" }} />
+              <YAxis
+                tick={{ fontSize: 12, fill: "#64748b" }}
+                allowDecimals={false}
+                domain={[0, maxTasks]}
+              />
               <Tooltip
                 formatter={(value) => `${value} tasks`}
                 contentStyle={{

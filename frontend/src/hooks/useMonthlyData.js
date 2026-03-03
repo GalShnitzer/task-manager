@@ -8,7 +8,9 @@ export function useMonthlyData(todos) {
 
   useEffect(() => {
     async function fetchMonthlyData() {
-      setLoading(true);
+      // Only set loading if we don't have any data yet
+      if (!monthlyData) setLoading(true);
+
       try {
         const url = `/api/v1/todos/todos-by-month?field=${selectedField}&year=${selectedYear}`;
         console.log("Fetching monthly data from:", url);
